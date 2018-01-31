@@ -8,15 +8,20 @@ use std::ops::{Add, Div, Sub};
 use num_traits::Float;
 use typenum::*;
 use generic_array::ArrayLength;
-// use bit_vec::BitBlock;
+use bit_vec::BitBlock;
 use bit_array::{BitArray, BitsIn};
 
 type B = u8;
 trait Dimension
-    where Self: Add<<B as BitsIn>::Output>,
+    where Self: Unsigned + NonZero + Add<<B as BitsIn>::Output>,
         <Self as Add<<B as BitsIn>::Output>>::Output: Sub<typenum::B1>,
         <<Self as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output: Div<<B as BitsIn>::Output>,
         <<<Self as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output as Div<<B as BitsIn>::Output>>::Output: generic_array::ArrayLength<B> {}
+impl<T> Dimension for T
+    where T: Unsigned + NonZero + Add<<B as BitsIn>::Output>,
+        <T as Add<<B as BitsIn>::Output>>::Output: Sub<typenum::B1>,
+        <<T as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output: Div<<B as BitsIn>::Output>,
+        <<<T as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output as Div<<B as BitsIn>::Output>>::Output: generic_array::ArrayLength<B> {}
 type UnitBasisBlade<D: Dimension> = BitArray<B, D>;
 
 struct ScaledBasisBlade<F: Float, D: Dimension> {
