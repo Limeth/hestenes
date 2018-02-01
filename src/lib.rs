@@ -1,38 +1,76 @@
 extern crate num_traits;
 extern crate typenum;
 extern crate generic_array;
-extern crate bit_vec;
-extern crate bit_array;
 
-use std::ops::{Add, Div, Sub};
+use std::marker::PhantomData;
 use num_traits::Float;
-use typenum::*;
-use generic_array::ArrayLength;
-use bit_vec::BitBlock;
-use bit_array::{BitArray, BitsIn};
+use typenum::Unsigned;
+use generic_array::{ArrayLength, GenericArray};
 
-type B = u8;
-trait Dimension
-    where Self: Unsigned + NonZero + Add<<B as BitsIn>::Output>,
-        <Self as Add<<B as BitsIn>::Output>>::Output: Sub<typenum::B1>,
-        <<Self as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output: Div<<B as BitsIn>::Output>,
-        <<<Self as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output as Div<<B as BitsIn>::Output>>::Output: generic_array::ArrayLength<B> {}
-impl<T> Dimension for T
-    where T: Unsigned + NonZero + Add<<B as BitsIn>::Output>,
-        <T as Add<<B as BitsIn>::Output>>::Output: Sub<typenum::B1>,
-        <<T as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output: Div<<B as BitsIn>::Output>,
-        <<<T as Add<<B as BitsIn>::Output>>::Output as Sub<typenum::B1>>::Output as Div<<B as BitsIn>::Output>>::Output: generic_array::ArrayLength<B> {}
-type UnitBasisBlade<D: Dimension> = BitArray<B, D>;
+// {{{ Dimension
+pub trait Dimension: Sized + Unsigned + ArrayLength<bool> {}
 
-struct ScaledBasisBlade<F: Float, D: Dimension> {
+impl<T> Dimension for T where T: Sized + Unsigned + ArrayLength<bool> {}
+// }}} Dimension
+
+// {{{ UnitBasisBlade
+#[derive(Clone, Eq, PartialEq, Default, Debug)]
+pub struct UnitBasisBlade<D: Dimension> {
+    bitset: usize,
+    _marker: PhantomData<D>,
+}
+
+impl<D: Dimension> UnitBasisBlade<D> {
+    /// Indices start from 0
+    pub fn contains_basis_vector(&self, index: u8) -> bool {
+        ((1 << index) & self.bitset) != 0
+    }
+}
+
+impl<D: Dimension, T: Into<GenericArray<bool, D>>> From<T> for UnitBasisBlade<D> {
+    fn from(other: T) -> Self {
+        UnitBasisBlade {
+            bitset: other.into().iter().enumerate().fold(0, |folded, (index, item)| {
+                folded + if *item { 1 << index } else { 0 } 
+            }),
+            _marker: PhantomData,
+        }
+    }
+}
+
+macro_rules! impl_unit_basis_blade_from {
+    ($($type:ty),+) => {
+        $(
+            impl<D: Dimension> From<$type> for UnitBasisBlade<D> {
+                fn from(other: $type) -> Self {
+                    UnitBasisBlade {
+                        bitset: other as usize,
+                        _marker: PhantomData,
+                    }
+                }
+            }
+        )+
+    }
+}
+
+impl_unit_basis_blade_from!(usize, u8, u16, u32, u64);
+// }}} UnitBasisBlade
+
+#[derive(Clone, Eq, PartialEq, Default, Debug)]
+pub struct ScaledBasisBlade<F: Float, D: Dimension> {
     unit_basis_blade: UnitBasisBlade<D>,
     scale: F,
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn it_works() {
+        let blade: UnitBasisBlade<typenum::U3> = 6u32.into();
+        let blade: UnitBasisBlade<typenum::U3> = [false, true, true].into();
+        panic!("{:?}", blade);
         assert_eq!(2 + 2, 4);
     }
 }
