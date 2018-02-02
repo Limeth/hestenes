@@ -14,7 +14,7 @@ macro_rules! impl_operator_owned {
     (operator_type: [$($operator_type:tt)+];
      operator_fn: $operator_fn:ident;
      generics: [$($generics:tt)*];
-     header: ($lhs:ty, $rhs:ty) => $output:ty;
+     header: ($lhs:ty, $rhs:ty) -> $output:ty;
      |$lhs_ident:ident, $rhs_ident:ident| $impl:expr) => {
         impl<$($generics)*> $($operator_type)+<$rhs> for $lhs {
             type Output = $output;
@@ -32,13 +32,13 @@ macro_rules! impl_operator {
     (operator_type: [$($operator_type:tt)+];
      operator_fn: $operator_fn:ident;
      generics: [$($generics:tt)*];
-     header: ($lhs:ty, $rhs:ty) => $output:ty;
+     header: ($lhs:ty, $rhs:ty) -> $output:ty;
      |&$lhs_ident:ident, &$rhs_ident:ident| $impl:expr) => {
         impl_operator_owned! {
             operator_type: [$($operator_type)+];
             operator_fn: $operator_fn;
             generics: ['a, 'b, $($generics)*];
-            header: (&'a $lhs, &'a $rhs) => $output;
+            header: (&'a $lhs, &'a $rhs) -> $output;
             |$lhs_ident, $rhs_ident| $impl
         }
 
@@ -46,7 +46,7 @@ macro_rules! impl_operator {
             operator_type: [$($operator_type)+];
             operator_fn: $operator_fn;
             generics: ['b, $($generics)*];
-            header: ($lhs, &'b $rhs) => $output;
+            header: ($lhs, &'b $rhs) -> $output;
             |$lhs_ident, $rhs_ident| {
                 $($operator_type)+::$operator_fn(&$lhs_ident, $rhs_ident)
             }
@@ -56,7 +56,7 @@ macro_rules! impl_operator {
             operator_type: [$($operator_type)+];
             operator_fn: $operator_fn;
             generics: ['a, $($generics)*];
-            header: (&'a $lhs, $rhs) => $output;
+            header: (&'a $lhs, $rhs) -> $output;
             |$lhs_ident, $rhs_ident| {
                 $($operator_type)+::$operator_fn($lhs_ident, &$rhs_ident)
             }
@@ -66,7 +66,7 @@ macro_rules! impl_operator {
             operator_type: [$($operator_type)+];
             operator_fn: $operator_fn;
             generics: [$($generics)*];
-            header: ($lhs, $rhs) => $output;
+            header: ($lhs, $rhs) -> $output;
             |$lhs_ident, $rhs_ident| {
                 $($operator_type)+::$operator_fn(&$lhs_ident, &$rhs_ident)
             }
@@ -78,7 +78,7 @@ impl_operator! {
     operator_type: [GeometricProduct];
     operator_fn: geom;
     generics: [R: Real, D: Dimension];
-    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) => ScaledBasisBlade<R, D>;
+    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
     |&_lhs, &_rhs| {
         Default::default()
     }
@@ -88,7 +88,7 @@ impl_operator! {
     operator_type: [Mul];
     operator_fn: mul;
     generics: [R: Real, D: Dimension];
-    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) => ScaledBasisBlade<R, D>;
+    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
     |&lhs, &rhs| {
         GeometricProduct::geom(lhs, rhs)
     }
