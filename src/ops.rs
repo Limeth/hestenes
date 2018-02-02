@@ -79,19 +79,20 @@ impl_operator! {
     operator_fn: geom;
     generics: [R: Real, D: Dimension];
     header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) => ScaledBasisBlade<R, D>;
-    |&lhs, &rhs| {
+    |&_lhs, &_rhs| {
         Default::default()
     }
 }
 
-// impl<RHS, T> Mul<RHS> for T where T: GeometricProduct<RHS> {
-//     type Output = T::Output;
-
-//     fn mul(self, _rhs: Self) -> Self::Output {
-//         // TODO
-//         self.geom(_rhs)
-//     }
-// }
+impl_operator! {
+    operator_type: [Mul];
+    operator_fn: mul;
+    generics: [R: Real, D: Dimension];
+    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) => ScaledBasisBlade<R, D>;
+    |&lhs, &rhs| {
+        GeometricProduct::geom(lhs, rhs)
+    }
+}
 
 #[cfg(test)]
 mod tests {
