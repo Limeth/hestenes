@@ -3,14 +3,95 @@ use dimension::Dimension;
 use basis_blade::ScaledBasisBlade;
 use num::Real;
 
-impl<'a, R: Real, D: Dimension> Mul for &'a ScaledBasisBlade<R, D> {
-    type Output = ScaledBasisBlade<R, D>;
+trait GeometricProduct<RHS=Self> {
+    type Output;
 
-    fn mul(self, _rhs: Self) -> Self::Output {
-        // TODO
+    fn geom(self, rhs: RHS) -> Self::Output;
+}
+
+/// Implements an operator on owned types
+macro_rules! impl_operator_owned {
+    (operator_type: [$($operator_type:tt)+];
+     operator_fn: $operator_fn:ident;
+     generics: [$($generics:tt)*];
+     header: ($lhs:ty, $rhs:ty) => $output:ty;
+     |$lhs_ident:ident, $rhs_ident:ident| $impl:expr) => {
+        impl<$($generics)*> $($operator_type)+<$rhs> for $lhs {
+            type Output = $output;
+
+            fn $operator_fn(self, $rhs_ident: $rhs) -> Self::Output {
+                let $lhs_ident = self;
+                $impl
+            }
+        }
+    }
+}
+
+/// Implements an operator on all owned/borrowed type combinations
+macro_rules! impl_operator {
+    (operator_type: [$($operator_type:tt)+];
+     operator_fn: $operator_fn:ident;
+     generics: [$($generics:tt)*];
+     header: ($lhs:ty, $rhs:ty) => $output:ty;
+     |&$lhs_ident:ident, &$rhs_ident:ident| $impl:expr) => {
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            operator_fn: $operator_fn;
+            generics: ['a, 'b, $($generics)*];
+            header: (&'a $lhs, &'a $rhs) => $output;
+            |$lhs_ident, $rhs_ident| $impl
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            operator_fn: $operator_fn;
+            generics: ['b, $($generics)*];
+            header: ($lhs, &'b $rhs) => $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn(&$lhs_ident, $rhs_ident)
+            }
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            operator_fn: $operator_fn;
+            generics: ['a, $($generics)*];
+            header: (&'a $lhs, $rhs) => $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn($lhs_ident, &$rhs_ident)
+            }
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            operator_fn: $operator_fn;
+            generics: [$($generics)*];
+            header: ($lhs, $rhs) => $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn(&$lhs_ident, &$rhs_ident)
+            }
+        }
+    }
+}
+
+impl_operator! {
+    operator_type: [GeometricProduct];
+    operator_fn: geom;
+    generics: [R: Real, D: Dimension];
+    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) => ScaledBasisBlade<R, D>;
+    |&lhs, &rhs| {
         Default::default()
     }
 }
+
+// impl<RHS, T> Mul<RHS> for T where T: GeometricProduct<RHS> {
+//     type Output = T::Output;
+
+//     fn mul(self, _rhs: Self) -> Self::Output {
+//         // TODO
+//         self.geom(_rhs)
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
