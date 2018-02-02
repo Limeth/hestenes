@@ -6,7 +6,7 @@ use num::Real;
 impl<'a, R: Real, D: Dimension> Mul for &'a ScaledBasisBlade<R, D> {
     type Output = ScaledBasisBlade<R, D>;
 
-    fn mul(self, rhs: Self) -> Self::Output {
+    fn mul(self, _rhs: Self) -> Self::Output {
         // TODO
         Default::default()
     }
@@ -18,11 +18,11 @@ mod tests {
     use basis_blade::UnitBasisBlade;
 
     #[test]
-    fn it_works() {
+    fn geometric_product() {
         let a: ScaledBasisBlade<f32, _> = UnitBasisBlade::<_>::from([false, true, true]).into();
         let b: ScaledBasisBlade<f32, _> = UnitBasisBlade::<_>::from([true, false, false]).into();
 
         // TODO
-        assert_eq!(a.mul(&b), ScaledBasisBlade::new([false, false, false].into(), 0.0));
+        assert_eq!(&a * &b, ScaledBasisBlade::new([false, false, false].into(), 0.0));
     }
 }

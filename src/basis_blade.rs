@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use generic_array::GenericArray;
-use dimension::{Dimension, DimensionBitset};
+use dimension::{Dimension, DimensionBitset, BitsetMask};
 use num::Real;
 
 // {{{ UnitBasisBlade
@@ -14,7 +14,7 @@ macro_rules! impl_unit_basis_blade_from {
     ($name:ident, $type:ty) => {
         pub fn $name(other: $type) -> Self {
             Self {
-                bitset: other as DimensionBitset,
+                bitset: (other as DimensionBitset) & <D as BitsetMask<DimensionBitset>>::bitset_mask(),
                 _marker: PhantomData,
             }
         }
@@ -72,3 +72,16 @@ impl<R: Real, D: Dimension> From<UnitBasisBlade<D>> for ScaledBasisBlade<R, D> {
     }
 }
 // }}} ScaledBasisBlade
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use typenum::U3;
+
+    #[test]
+    fn unit_basis_blade_from_u8() {
+        let blade = UnitBasisBlade::<U3>::from_u8(255u8);
+
+        assert_eq!(blade.bitset, 7);
+    }
+}
