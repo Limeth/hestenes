@@ -1,10 +1,8 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 use std::marker::PhantomData;
 use generic_array::GenericArray;
-use dimension::{Dimension, DimensionBitset, BitsetMask};
-use num::Real;
+use dimension::{CountBits, Dimension, DimensionBitset, BitsetMask, Grade};
 
-// {{{ UnitBasisBlade
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct UnitBasisBlade<D: Dimension> {
     bitset: DimensionBitset,
@@ -43,6 +41,10 @@ impl<D: Dimension> UnitBasisBlade<D> {
         ((1 << index) & self.bitset) != 0
     }
 
+    pub fn basis_vectors(&self) -> GenericArray<bool, D> {
+        GenericArray::generate(|index| self.contains_basis_vector(index as u8))
+    }
+
     pub fn bitset(&self) -> DimensionBitset {
         self.bitset
     }
@@ -66,6 +68,12 @@ impl<D: Dimension, T: Into<GenericArray<bool, D>>> From<T> for UnitBasisBlade<D>
             }),
             _marker: PhantomData,
         }
+    }
+}
+
+impl<D: Dimension> Grade for UnitBasisBlade<D> {
+    fn grade(&self) -> u8 {
+        self.bitset.count_bits()
     }
 }
 
@@ -98,61 +106,6 @@ impl_operator! {
         UnitBasisBlade::new(BitXor::bitxor(lhs.bitset, rhs.bitset))
     }
 }
-// }}} UnitBasisBlade
-
-// {{{ ScaledBasisBlade
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
-pub struct ScaledBasisBlade<R: Real, D: Dimension> {
-    scale: R,
-    unit_basis_blade: UnitBasisBlade<D>,
-}
-
-impl<R: Real, D: Dimension> ScaledBasisBlade<R, D> {
-    pub fn zero() -> Self {
-        ScaledBasisBlade {
-            scale: R::zero(),
-            unit_basis_blade: UnitBasisBlade::zero(),
-        }
-    }
-
-    pub fn new(scale: R, unit_basis_blade: UnitBasisBlade<D>) -> Self {
-        if unit_basis_blade.is_zero() || scale.is_zero() {
-            Self::zero()
-        } else {
-            Self {
-                scale,
-                unit_basis_blade,
-            }
-        }
-    }
-
-    pub fn scale(&self) -> R {
-        self.scale
-    }
-
-    pub fn unit_basis_blade(&self) -> &UnitBasisBlade<D> {
-        &self.unit_basis_blade
-    }
-
-    pub fn is_zero(&self) -> bool {
-        self.scale.is_zero()
-    }
-}
-
-impl<R: Real, D: Dimension> From<UnitBasisBlade<D>> for ScaledBasisBlade<R, D> {
-    fn from(unit_basis_blade: UnitBasisBlade<D>) -> Self {
-        ScaledBasisBlade::new(R::one(), unit_basis_blade)
-    }
-}
-
-impl<R: Real, D: Dimension> From<(R, UnitBasisBlade<D>)> for ScaledBasisBlade<R, D> {
-    fn from(tuple: (R, UnitBasisBlade<D>)) -> Self {
-        let (scale, unit_basis_blade) = tuple;
-
-        ScaledBasisBlade::new(scale, unit_basis_blade)
-    }
-}
-// }}} ScaledBasisBlade
 
 #[cfg(test)]
 mod tests {
@@ -164,6 +117,7 @@ mod tests {
         let blade: UnitBasisBlade<_> = [false, true, true].into();
 
         assert_eq!(blade.bitset, 6);
+        assert_eq!(blade.basis_vectors(), [false, true, true].into());
     }
 
     #[test]
@@ -171,5 +125,6 @@ mod tests {
         let blade = UnitBasisBlade::<U3>::from_u8(255u8);
 
         assert_eq!(blade.bitset, 7);
+        assert_eq!(blade.basis_vectors(), [true, true, true].into());
     }
 }

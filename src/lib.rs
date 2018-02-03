@@ -9,10 +9,12 @@ extern crate alga;
 pub mod dimension;
 #[macro_use]
 pub mod ops;
-pub mod basis_blade;
+pub mod unit_basis_blade;
+pub mod scaled_basis_blade;
 pub mod num;
 
 pub use dimension::*;
-pub use basis_blade::*;
+pub use unit_basis_blade::*;
+pub use scaled_basis_blade::*;
 pub use ops::*;
 pub use num::*;

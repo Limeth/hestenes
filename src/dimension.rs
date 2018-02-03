@@ -1,9 +1,16 @@
 use typenum::{Unsigned, IsLessOrEqual, True};
 use generic_array::ArrayLength;
 
-// TODO: Rename to Grade
 pub trait BitsetMask<T> {
     fn bitset_mask() -> T;
+}
+
+pub trait CountBits {
+    fn count_bits(&self) -> u8;
+}
+
+pub trait Grade {
+    fn grade(&self) -> u8;
 }
 
 macro_rules! define_max_dimension {
@@ -17,6 +24,21 @@ macro_rules! define_max_dimension {
             #[inline]
             fn bitset_mask() -> DimensionBitset {
                 ((1 as $bitset_type) << T::$to_uint()) - 1
+            }
+        }
+
+        impl CountBits for DimensionBitset {
+            /// Counts the number of bits in a `DimensionBitset`
+            fn count_bits(&self) -> u8 {
+                let mut bitset = *self;
+                let mut count = 0u8;
+
+                while bitset != 0 {
+                    count += bitset & 1;
+                    bitset >>= 1;
+                }
+
+                count
             }
         }
     }

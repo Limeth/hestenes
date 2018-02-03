@@ -1,9 +1,10 @@
 use std::ops::Mul;
 use dimension::{Dimension, DimensionBitset};
-use basis_blade::{UnitBasisBlade, ScaledBasisBlade};
+use unit_basis_blade::UnitBasisBlade;
+use scaled_basis_blade::ScaledBasisBlade;
 use num::Real;
 
-trait GeometricProduct<RHS=Self> {
+pub trait GeometricProduct<RHS=Self> {
     type Output;
 
     fn geom(self, rhs: RHS) -> Self::Output;
@@ -72,64 +73,6 @@ macro_rules! impl_operator {
                 $($operator_type)+::$operator_fn(&$lhs_ident, &$rhs_ident)
             }
         }
-    }
-}
-
-/// Counts the number of bits in a `DimensionBitset`
-fn count_bits(mut bitset: DimensionBitset) -> u8 {
-    let mut count = 0u8;
-
-    while bitset != 0 {
-        count += bitset & 1;
-        bitset >>= 1;
-    }
-
-    count
-}
-
-impl_operator! {
-    operator_type: [GeometricProduct];
-    operator_fn: geom;
-    generics: [R: Real, D: Dimension];
-    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
-    |&lhs, &rhs| {
-        let mut lbs = lhs.unit_basis_blade().bitset();
-        let rbs = rhs.unit_basis_blade().bitset();
-
-        // Check for linear dependency
-        if lbs & rbs != 0 {
-            // If two blades are linearly dependent, the result is 0.
-            return ScaledBasisBlade::zero();
-        }
-
-        let mut scale = lhs.scale() * rhs.scale();
-
-        if scale.is_zero() {
-            return ScaledBasisBlade::zero();
-        }
-
-        let resulting_bitset = lbs | rbs;
-        let mut total_swaps = 0;
-
-        while lbs > 1 {
-            lbs >>= 1;
-            total_swaps += count_bits(lbs & rbs);
-        }
-
-        // Negate the scale if the number of swaps was odd
-        scale = if total_swaps % 2 == 0 { scale } else { scale.neg() };
-
-        ScaledBasisBlade::new(scale, UnitBasisBlade::new(resulting_bitset))
-    }
-}
-
-impl_operator! {
-    operator_type: [Mul];
-    operator_fn: mul;
-    generics: [R: Real, D: Dimension];
-    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
-    |&lhs, &rhs| {
-        GeometricProduct::geom(lhs, rhs)
     }
 }
 
