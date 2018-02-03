@@ -10,6 +10,12 @@ pub trait GeometricProduct<RHS=Self> {
     fn geom(self, rhs: RHS) -> Self::Output;
 }
 
+pub trait WedgeProduct<RHS=Self> {
+    type Output;
+
+    fn wedge(self, rhs: RHS) -> Self::Output;
+}
+
 /// Implements an operator on owned types
 macro_rules! impl_operator_owned {
     (operator_type: [$($operator_type:tt)+];
@@ -73,26 +79,5 @@ macro_rules! impl_operator {
                 $($operator_type)+::$operator_fn(&$lhs_ident, &$rhs_ident)
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn geometric_product_1() {
-        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
-        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
-
-        assert_eq!(&a * &b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
-    }
-
-    #[test]
-    fn geometric_product_2() {
-        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
-        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
-
-        assert_eq!(&a * &b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
     }
 }

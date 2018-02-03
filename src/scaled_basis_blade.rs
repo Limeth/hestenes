@@ -1,6 +1,6 @@
-use std::ops::Mul;
+use std::ops::BitXor;
 use dimension::{CountBits, Dimension};
-use ops::GeometricProduct;
+use ops::WedgeProduct;
 use num::Real;
 use unit_basis_blade::UnitBasisBlade;
 
@@ -57,8 +57,8 @@ impl<R: Real, D: Dimension> From<(R, UnitBasisBlade<D>)> for ScaledBasisBlade<R,
 }
 
 impl_operator! {
-    operator_type: [GeometricProduct];
-    operator_fn: geom;
+    operator_type: [WedgeProduct];
+    operator_fn: wedge;
     generics: [R: Real, D: Dimension];
     header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
     |&lhs, &rhs| {
@@ -93,11 +93,32 @@ impl_operator! {
 }
 
 impl_operator! {
-    operator_type: [Mul];
-    operator_fn: mul;
+    operator_type: [BitXor];
+    operator_fn: bitxor;
     generics: [R: Real, D: Dimension];
     header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
     |&lhs, &rhs| {
-        GeometricProduct::geom(lhs, rhs)
+        WedgeProduct::wedge(lhs, rhs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wedge_product_1() {
+        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
+        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
+
+        assert_eq!(a^b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
+    }
+
+    #[test]
+    fn wedge_product_2() {
+        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
+        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
+
+        assert_eq!(a^b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
     }
 }
