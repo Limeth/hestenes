@@ -1,6 +1,6 @@
 use std::ops::Mul;
-use dimension::Dimension;
-use basis_blade::ScaledBasisBlade;
+use dimension::{Dimension, DimensionBitset};
+use basis_blade::{UnitBasisBlade, ScaledBasisBlade};
 use num::Real;
 
 trait GeometricProduct<RHS=Self> {
@@ -19,6 +19,7 @@ macro_rules! impl_operator_owned {
         impl<$($generics)*> $($operator_type)+<$rhs> for $lhs {
             type Output = $output;
 
+            #[inline]
             fn $operator_fn(self, $rhs_ident: $rhs) -> Self::Output {
                 let $lhs_ident = self;
                 $impl
@@ -74,13 +75,51 @@ macro_rules! impl_operator {
     }
 }
 
+/// Counts the number of bits in a `DimensionBitset`
+fn count_bits(mut bitset: DimensionBitset) -> u8 {
+    let mut count = 0u8;
+
+    while bitset != 0 {
+        count += bitset & 1;
+        bitset >>= 1;
+    }
+
+    count
+}
+
 impl_operator! {
     operator_type: [GeometricProduct];
     operator_fn: geom;
     generics: [R: Real, D: Dimension];
     header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
-    |&_lhs, &_rhs| {
-        Default::default()
+    |&lhs, &rhs| {
+        let mut lbs = lhs.unit_basis_blade().bitset();
+        let rbs = rhs.unit_basis_blade().bitset();
+
+        // Check for linear dependency
+        if lbs & rbs != 0 {
+            // If two blades are linearly dependent, the result is 0.
+            return ScaledBasisBlade::zero();
+        }
+
+        let mut scale = lhs.scale() * rhs.scale();
+
+        if scale.is_zero() {
+            return ScaledBasisBlade::zero();
+        }
+
+        let resulting_bitset = lbs | rbs;
+        let mut total_swaps = 0;
+
+        while lbs > 1 {
+            lbs >>= 1;
+            total_swaps += count_bits(lbs & rbs);
+        }
+
+        // Negate the scale if the number of swaps was odd
+        scale = if total_swaps % 2 == 0 { scale } else { scale.neg() };
+
+        ScaledBasisBlade::new(scale, UnitBasisBlade::new(resulting_bitset))
     }
 }
 
@@ -97,14 +136,20 @@ impl_operator! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use basis_blade::UnitBasisBlade;
 
     #[test]
-    fn geometric_product() {
-        let a: ScaledBasisBlade<f32, _> = UnitBasisBlade::<_>::from([false, true, true]).into();
-        let b: ScaledBasisBlade<f32, _> = UnitBasisBlade::<_>::from([true, false, false]).into();
+    fn geometric_product_1() {
+        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
+        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
 
-        // TODO
-        assert_eq!(&a * &b, ScaledBasisBlade::new([false, false, false].into(), 0.0));
+        assert_eq!(&a * &b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
+    }
+
+    #[test]
+    fn geometric_product_2() {
+        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
+        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
+
+        assert_eq!(&a * &b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
     }
 }

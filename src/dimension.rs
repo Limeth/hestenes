@@ -1,6 +1,7 @@
 use typenum::{Unsigned, IsLessOrEqual, True};
 use generic_array::ArrayLength;
 
+// TODO: Rename to Grade
 pub trait BitsetMask<T> {
     fn bitset_mask() -> T;
 }
