@@ -1,6 +1,6 @@
 use std::ops::BitXor;
 use dimension::{CountBits, Dimension};
-use ops::WedgeProduct;
+use ops::OuterProduct;
 use num::Real;
 use unit_basis_blade::UnitBasisBlade;
 
@@ -56,9 +56,8 @@ impl<R: Real, D: Dimension> From<(R, UnitBasisBlade<D>)> for ScaledBasisBlade<R,
     }
 }
 
-impl_operator! {
-    operator_type: [WedgeProduct];
-    operator_fn: wedge;
+impl_operator_outer! {
+    inline: [false];
     generics: [R: Real, D: Dimension];
     header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
     |&lhs, &rhs| {
@@ -92,33 +91,24 @@ impl_operator! {
     }
 }
 
-impl_operator! {
-    operator_type: [BitXor];
-    operator_fn: bitxor;
-    generics: [R: Real, D: Dimension];
-    header: (ScaledBasisBlade<R, D>, ScaledBasisBlade<R, D>) -> ScaledBasisBlade<R, D>;
-    |&lhs, &rhs| {
-        WedgeProduct::wedge(lhs, rhs)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use typenum::U3;
 
     #[test]
-    fn wedge_product_1() {
-        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
-        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
+    fn outer_product_1() {
+        let a: ScaledBasisBlade<f32, U3> = (2.0, 0b110.into()).into();
+        let b: ScaledBasisBlade<f32, U3> = (3.0, 0b001.into()).into();
 
-        assert_eq!(a^b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
+        assert_eq!(a^b, ScaledBasisBlade::new(6.0, 0b111.into()));
     }
 
     #[test]
-    fn wedge_product_2() {
-        let a: ScaledBasisBlade<f32, _> = (1.0, ([false, true, true]).into()).into();
-        let b: ScaledBasisBlade<f32, _> = (1.0, ([true, false, false]).into()).into();
+    fn outer_product_2() {
+        let a: ScaledBasisBlade<f32, U3> = (5.0, 0b110.into()).into();
+        let b: ScaledBasisBlade<f32, U3> = (7.0, 0b110.into()).into();
 
-        assert_eq!(a^b, ScaledBasisBlade::new(1.0, [true, true, true].into()));
+        assert_eq!(a^b, ScaledBasisBlade::new(35.0, 0b000.into()));
     }
 }
