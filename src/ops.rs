@@ -16,7 +16,7 @@ pub trait OuterProduct<RHS=Self> {
     fn outer(self, rhs: RHS) -> Self::Output;
 }
 
-/// Implements an operator on owned types
+/// Implements a binary operator on owned types
 macro_rules! impl_operator_owned {
     (operator_type: [$($operator_type:tt)+];
      inline: [false];
@@ -154,6 +154,82 @@ macro_rules! impl_operator {
             header: (&'a $lhs, &'b mut $rhs) -> $output;
             |$lhs_ident, $rhs_ident| {
                 $($operator_type)+::$operator_fn($lhs_ident, &*$rhs_ident)
+            }
+        }
+    }
+}
+
+/// Implements an unary operator on owned types
+macro_rules! impl_unary_operator_owned {
+    (operator_type: [$($operator_type:tt)+];
+     inline: [false];
+     operator_fn: $operator_fn:ident;
+     generics: [$($generics:tt)*];
+     header: ($input:ty) -> $output:ty;
+     |$self:ident| $impl:expr) => {
+        impl<$($generics)*> $($operator_type)+ for $input {
+            type Output = $output;
+
+            fn $operator_fn(self) -> Self::Output {
+                let $self = self;
+                $impl
+            }
+        }
+    };
+
+    (operator_type: [$($operator_type:tt)+];
+     inline: [true];
+     operator_fn: $operator_fn:ident;
+     generics: [$($generics:tt)*];
+     header: ($input:ty) -> $output:ty;
+     |$self:ident| $impl:expr) => {
+        impl<$($generics)*> $($operator_type)+ for $input {
+            type Output = $output;
+
+            #[inline]
+            fn $operator_fn(self) -> Self::Output {
+                let $self = self;
+                $impl
+            }
+        }
+    }
+}
+
+macro_rules! impl_unary_operator {
+    (operator_type: [$($operator_type:tt)+];
+     inline: [$($inline:tt)+];
+     operator_fn: $operator_fn:ident;
+     generics: [$($generics:tt)*];
+     header: ($input:ty) -> $output:ty;
+     |&$self:ident| $impl:expr) => {
+        impl_unary_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['a, $($generics)*];
+            header: (&'a $input) -> $output;
+            |$self| $impl
+        }
+
+        impl_unary_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['a, $($generics)*];
+            header: (&'a mut $input) -> $output;
+            |$self| {
+                $($operator_type)+::$operator_fn(&*$self)
+            }
+        }
+
+        impl_unary_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: [$($generics)*];
+            header: ($input) -> $output;
+            |$self| {
+                $($operator_type)+::$operator_fn(&$self)
             }
         }
     }
