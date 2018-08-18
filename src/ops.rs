@@ -65,7 +65,7 @@ macro_rules! impl_operator {
             inline: [$($inline)+];
             operator_fn: $operator_fn;
             generics: ['a, 'b, $($generics)*];
-            header: (&'a $lhs, &'a $rhs) -> $output;
+            header: (&'a $lhs, &'b $rhs) -> $output;
             |$lhs_ident, $rhs_ident| $impl
         }
 
