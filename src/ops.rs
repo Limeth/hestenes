@@ -101,6 +101,61 @@ macro_rules! impl_operator {
                 $($operator_type)+::$operator_fn(&$lhs_ident, &$rhs_ident)
             }
         }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['a, 'b, $($generics)*];
+            header: (&'a mut $lhs, &'b mut $rhs) -> $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn(&*$lhs_ident, &*$rhs_ident)
+            }
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['b, $($generics)*];
+            header: ($lhs, &'b mut $rhs) -> $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn(&$lhs_ident, &*$rhs_ident)
+            }
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['a, $($generics)*];
+            header: (&'a mut $lhs, $rhs) -> $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn(&*$lhs_ident, &$rhs_ident)
+            }
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['a, 'b, $($generics)*];
+            header: (&'a mut $lhs, &'b $rhs) -> $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn(&*$lhs_ident, $rhs_ident)
+            }
+        }
+
+        impl_operator_owned! {
+            operator_type: [$($operator_type)+];
+            inline: [$($inline)+];
+            operator_fn: $operator_fn;
+            generics: ['a, 'b, $($generics)*];
+            header: (&'a $lhs, &'b mut $rhs) -> $output;
+            |$lhs_ident, $rhs_ident| {
+                $($operator_type)+::$operator_fn($lhs_ident, &*$rhs_ident)
+            }
+        }
     }
 }
 
